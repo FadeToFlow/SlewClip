@@ -1,0 +1,46 @@
+name: Build Windows
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Speeds up re-runs: JUCE's FetchContent clone (~150 MB) is reused
+      # instead of re-cloned, as long as CMakeLists.txt (and the JUCE
+      # GIT_TAG in it) hasn't changed.
+      - name: Cache JUCE FetchContent
+        uses: actions/cache@v4
+        with:
+          path: build/_deps
+          key: juce-${{ hashFiles('CMakeLists.txt') }}
+
+      - name: Configure
+        run: cmake -B build -G "Visual Studio 17 2022" -A x64 -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build --config Release --parallel
+
+      # JUCE's CMake API always writes build outputs to
+      # <build>/<target>_artefacts/<config>/<FORMAT>/ - this grabs
+      # everything at once (VST3, LV2, Standalone; AU is silently
+      # skipped on non-macOS).
+      - name: Upload artefacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: SlewClip-Windows
+          path: build/SlewClip_artefacts/Release
+          if-no-files-found: error
