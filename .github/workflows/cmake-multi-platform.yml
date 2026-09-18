@@ -19,11 +19,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Инициализирует окружение MSVC (cl.exe, link.exe и библиотеки)
       - name: Setup MSVC
         uses: ilammy/msvc-dev-cmd@v1
 
-      # Кэширование заvisимостей JUCE FetchContent
       - name: Cache JUCE FetchContent
         uses: actions/cache@v4
         with:
